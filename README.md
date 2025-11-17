@@ -15,7 +15,7 @@ Built with a compact **FastAPI backend** and a **single-file React frontend**, i
 ## 🌟 Features
 
 ### ⚡ Threat Chat (MITRE-Enhanced)
-Ask questions about ATT&CK techniques, malware behavior, adversary TTPs, and receive **context-augmented answers** using your local MITRE dataset.
+Ask questions about ATTACK techniques, malware behavior, adversary TTPs, and receive **context-augmented answers** using your local MITRE dataset.
 
 ### 📘 Report Summarization
 Upload a CTI report (PDF) and instantly generate a structured summary highlighting key insights, IoCs, and analyst-relevant points.
