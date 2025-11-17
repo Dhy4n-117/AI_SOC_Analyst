@@ -3,7 +3,7 @@
 **AI SOC Analyst** is a lightweight, privacy-first security analysis assistant built for SOC analysts, threat hunters, and CTI teams.  
 It runs **entirely on your local machine**, providing:
 
-- 🧠 MITRE ATT&CK–aware Threat Chat (RAG)
+- 🧠 MITRE ATTACK–aware Threat Chat (RAG)
 - 📄 Automated PDF threat-report summarization
 - 🧩 IoC extraction from raw text  
 - 🔒 Zero cloud dependencies — no data ever leaves your device
