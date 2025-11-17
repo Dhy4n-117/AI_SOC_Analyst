@@ -3,7 +3,7 @@
 **AI SOC Analyst** is a lightweight, privacy-first security analysis assistant built for SOC analysts, threat hunters, and CTI teams.  
 It runs **entirely on your local machine**, providing:
 
-- 🧠 MITRE ATTACK–aware Threat Chat (RAG)
+- 🧠 MITRE ATT&CK–aware Threat Chat (RAG)
 - 📄 Automated PDF threat-report summarization
 - 🧩 IoC extraction from raw text  
 - 🔒 Zero cloud dependencies — no data ever leaves your device
@@ -15,7 +15,7 @@ Built with a compact **FastAPI backend** and a **single-file React frontend**, i
 ## 🌟 Features
 
 ### ⚡ Threat Chat (MITRE-Enhanced)
-Ask questions about ATTACK techniques, malware behavior, adversary TTPs, and receive **context-augmented answers** using your local MITRE dataset.
+Ask questions about ATT&CK techniques, malware behavior, adversary TTPs, and receive **context-augmented answers** using your local MITRE dataset.
 
 ### 📘 Report Summarization
 Upload a CTI report (PDF) and instantly generate a structured summary highlighting key insights, IoCs, and analyst-relevant points.
@@ -38,4 +38,36 @@ Everything is processed inside your system.
 
 ---
 
+# 🚀 Running AI SOC Analyst
 
+This guide explains exactly how to run the **backend** and **frontend** for AI SOC Analyst on your local machine.
+
+---
+
+# 📁 Required Dataset (IMPORTANT)
+
+AI SOC Analyst uses the **MITRE ATT&CK Enterprise dataset** to provide accurate, RAG-enhanced threat intelligence answers.
+
+### ✅ Required file: enterprise-attack.json
+
+### 📥 Download from MITRE:
+Official ATT&CK dataset:  
+🔗 https://attack.mitre.org/resources/working-with-attack/
+
+Download the **“Enterprise ATT&CK JSON”** file.
+
+### 📌 Where to place it:
+Put the downloaded file **in the same directory as backend.py
+
+### 🔍 Why it’s required:
+- Enables MITRE ATT&CK lookups  
+- Allows the assistant to cite TTPs and IDs  
+- Powers the RAG-based Threat Chat  
+
+### ⚠️ If the dataset is missing:
+- The backend will start, but Threat Chat will NOT return MITRE-backed responses  
+- You may see warnings or reduced accuracy  
+
+Make sure the file exists before running the backend.
+
+---
