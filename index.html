@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI SOC Analyst v9</title>
+    
+    <!-- React & ReactDOM --><script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX --><script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Markdown Parser --><script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- Google Font --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            background-color: #020617; /* Slate-950 */
+            color: #cbd5e1; /* Slate-300 */
+        }
+        .font-ui { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'IBM Plex Mono', monospace; }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* --- GRADIENT CLASSES --- */
+        .text-gradient {
+            background: linear-gradient(90deg, #004aad, #cb6ce6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+        .bg-gradient-button {
+            background: linear-gradient(90deg, #004aad, #cb6ce6);
+            transition: all 0.2s ease-in-out;
+        }
+        .bg-gradient-button:hover {
+            box-shadow: 0 0 15px #cb6ce699;
+            filter: brightness(1.2);
+        }
+
+        /* --- MARKDOWN STYLES --- */
+        .prose { color: #cbd5e1; font-family: 'Inter', sans-serif; }
+        .prose h1, .prose h2, .prose h3 {
+            color: #f1f5f9;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+        .prose h1 strong, .prose h2 strong, .prose h3 strong {
+            background: linear-gradient(90deg, #004aad, #cb6ce6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .prose strong { color: #f8fafc; }
+        .prose ul > li::marker { color: #cb6ce6; }
+        .prose code {
+            color: #f1f5f9;
+            background-color: #1e293b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        const API_URL = "http://localhost:8000";
+
+        // --- Icon Components (Inline SVG) ---
+        const ShieldIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+        );
+        const HomeIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+        );
+        const BotIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#cb6ce6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <rect width="18" height="10" x="3" y="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /><path d="M12 17v-2" /><path d="M8 15v-1" /><path d="M16 15v-1" />
+            </svg>
+        );
+        const UserIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#004aad" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 flex-shrink-0">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+            </svg>
+        );
+        const FileIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" />
+            </svg>
+        );
+        const ChatIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+        );
+         const CopyIcon = ({ copied }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                {copied ? (
+                    <path d="M20 6 9 17l-5-5" />
+                ) : (
+                    <React.Fragment>
+                        <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                        <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                    </React.Fragment>
+                )}
+            </svg>
+        );
+         const LoaderIcon = () => (
+            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="#cb6ce6" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        );
+        const UploadIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 mx-auto mb-4 text-slate-500">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" />
+            </svg>
+        );
+        const NewChatIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M12 5v14" /><path d="M5 12h14" />
+            </svg>
+        );
+        const FollowUpIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 mr-2">
+                <path d="M10 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V14" /><path d="M16 3h5v5" /><path d="M11 13 21 3" />
+            </svg>
+        );
+        const ScanIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <path d="M3 7V5a2 2 0 0 1 2-2h2" /><path d="M17 3h2a2 2 0 0 1 2 2v2" /><path d="M21 17v2a2 2 0 0 1-2 2h-2" /><path d="M7 21H5a2 2 0 0 1-2-2v-2" /><line x1="7" x2="17" y1="12" y2="12" />
+            </svg>
+        );
+        const DatabaseIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14a9 3 0 0 0 18 0V5" /><path d="M3 12a9 3 0 0 0 18 0" /></svg>
+        );
+        const SpeedIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /><path d="M19 12h2" /><path d="M3 12h2" /><path d="m12 19 2-4" /><path d="m6 7 2 2.5" /><path d="m16 7-2 2.5" /></svg>
+        );
+        const TextIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M17 6.1H3" /><path d="M21 12.1H3" /><path d="M15.1 18.1H3" /></svg>
+        );
+        const LinkIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+        );
+
+
+        // --- Markdown Hook ---
+        const useMarkdown = (text) => {
+            return { __html: marked.parse(text || '') };
+        };
+        
+        // --- Copy to Clipboard Button ---
+        const CopyToClipboard = ({ text }) => {
+            const [copied, setCopied] = useState(false);
+            const copy = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                }
+                document.body.removeChild(ta);
+            };
+            return (
+                <button 
+                    onClick={copy} 
+                    className="absolute top-4 right-4 bg-slate-700 p-2 rounded-lg text-slate-300 hover:bg-slate-600 transition"
+                    title="Copy to clipboard"
+                >
+                    <CopyIcon copied={copied} />
+                </button>
+            );
+        };
+        
+        // --- Sidebar Component ---
+        const Sidebar = ({ currentView, setCurrentView, handleNewChat }) => {
+            return (
+                <div className="w-64 bg-slate-900 h-screen p-4 flex flex-col font-ui border-r border-slate-800">
+                    {/* Logo */}
+                    <div className="flex items-center gap-3 mb-8 border-b border-slate-800 pb-4">
+                        <div className="w-10 h-10 bg-gradient-button rounded-lg flex items-center justify-center text-white shadow-lg shadow-purple-900/50">
+                            <ShieldIcon />
+                        </div>
+                        <h1 className="text-xl font-bold text-gradient">
+                            AI SOC ANALYST
+                        </h1>
+                    </div>
+
+                    {/* Navigation */}
+                    <nav className="flex-1 space-y-2 group">
+                        <NavButton
+                            text="Home"
+                            icon={<HomeIcon />}
+                            isActive={currentView === 'home'}
+                            onClick={() => setCurrentView('home')}
+                        />
+                        <NavButton
+                            text="Threat Chat"
+                            icon={<ChatIcon />}
+                            isActive={currentView === 'chat'}
+                            onClick={() => setCurrentView('chat')}
+                        />
+                        <NavButton
+                            text="Report Analysis"
+                            icon={<FileIcon />}
+                            isActive={currentView === 'report'}
+                            onClick={() => setCurrentView('report')}
+                        />
+                        <NavButton
+                            text="IoC Extractor"
+                            icon={<ScanIcon />}
+                            isActive={currentView === 'extractor'}
+                            onClick={() => setCurrentView('extractor')}
+                        />
+                    </nav>
+
+                    {/* New Chat Button */}
+                    <button 
+                        onClick={handleNewChat}
+                        className="flex items-center justify-center gap-2 bg-slate-800 text-slate-400 px-3 py-3 rounded-md font-semibold hover:bg-slate-700 hover:text-white transition"
+                        title="Start a new chat"
+                    >
+                        <NewChatIcon />
+                        <span>New Chat</span>
+                    </button>
+                </div>
+            );
+        };
+
+        const NavButton = ({ text, icon, isActive, onClick }) => {
+            const baseStyle = "w-full flex items-center gap-3 px-4 py-3 rounded-lg font-semibold text-left transition-all duration-300 transform";
+            
+            // This style is applied when the button is the one currently selected
+            const activeStyle = "bg-gradient-button text-white shadow-lg shadow-blue-900/50 !opacity-100 !scale-[1.05] !-translate-y-1";
+            
+            // This style is for all other buttons
+            const inactiveStyle = "text-slate-400 group-hover:opacity-75 group-hover:scale-[0.95] hover:!opacity-100 hover:!scale-[1.05] hover:!-translate-y-1 hover:bg-slate-800 hover:text-slate-200";
+
+            return (
+                <button
+                    onClick={onClick}
+                    className={`${baseStyle} ${isActive ? activeStyle : inactiveStyle}`}
+                >
+                    {icon}
+                    <span>{text}</span>
+                </button>
+            );
+        };
+
+        // --- Home Page Component ---
+        const Home = ({ setCurrentView }) => {
+            return (
+                <div className="w-full">
+                    {/* --- Top Section (Welcome) --- */}
+                    <div className="font-ui text-center max-w-4xl w-full mx-auto flex flex-col justify-center items-center min-h-[100vh] py-10">
+                        <h1 className="text-4xl font-bold text-gradient mb-4">Welcome, Analyst</h1>
+                        <p className="text-lg text-slate-400 mb-10">Select a tool from the sidebar or one of the options below to begin.</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 group w-full">
+                            <ToolCard
+                                onClick={() => setCurrentView('chat')}
+                                icon={<ChatIcon />}
+                                title="Threat Chat"
+                                description="Ask the AI about MITRE ATT&CK techniques, tactics, and procedures."
+                            />
+                            <ToolCard
+                                onClick={() => setCurrentView('report')}
+                                icon={<FileIcon />}
+                                title="Report Analysis"
+                                description="Summarize long PDF threat reports to extract key intelligence and IoCs."
+                            />
+                            <ToolCard
+                                onClick={() => setCurrentView('extractor')}
+                                icon={<ScanIcon />}
+                                title="IoC Extractor"
+                                description="Paste raw text (emails, logs, posts) to instantly extract and validate IoCs."
+                            />
+                        </div>
+                    </div>
+                    
+                    {/* --- Section (Why This Tool Matters) --- */}
+                    <div className="font-ui text-center max-w-5xl w-full mx-auto mt-24 mb-16 pt-16 border-t border-slate-800">
+                        <h2 className="text-3xl font-bold text-gradient mb-12">Why This Tool Matters</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <InfoCard
+                                icon={<DatabaseIcon />}
+                                title="Augmented Intelligence (RAG)"
+                                description="Answers aren't just guesses. The chat is augmented by the entire MITRE ATT&CK framework, providing cited, accurate, and relevant answers."
+                            />
+                            <InfoCard
+                                icon={<SpeedIcon />}
+                                title="High-Speed Automation"
+                                description="Automates the most time-consuming analyst tasks. It summarizes 100-page reports in minutes and extracts IoCs from raw text instantly."
+                            />
+                            <InfoCard
+                                icon={<ShieldIcon />}
+                                title="Secure & Local"
+                                description="Runs 100% on your local machine. No sensitive data, logs, or reports are ever sent to a third-party cloud, ensuring complete privacy."
+                            />
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- ToolCard Component (with pop effect) ---
+        const ToolCard = ({ onClick, icon, title, description }) => {
+            return (
+                <button
+                    onClick={onClick}
+                    className="bg-slate-900/50 border border-slate-800 p-6 rounded-lg text-left transition-all duration-300 transform 
+                               group-hover:scale-[0.95] group-hover:opacity-75 
+                               hover:!scale-[1.05] hover:!opacity-100 hover:!-translate-y-4 hover:!border-purple-600 hover:!shadow-2xl hover:!shadow-purple-900/50"
+                >
+                    <div className="w-12 h-12 bg-gradient-button rounded-lg flex items-center justify-center text-white mb-4">
+                        {React.cloneElement(icon, { className: "w-6 h-6" })}
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
+                    <p className="text-slate-400">{description}</p>
+                </button>
+            );
+        };
+
+        // --- InfoCard Component (no hover effects) ---
+        const InfoCard = ({ icon, title, description }) => {
+            return (
+                <div
+                    className="bg-slate-900/50 border border-slate-800 p-6 rounded-lg text-left transition-all duration-300"
+                >
+                    <div className="w-12 h-12 bg-gradient-button rounded-lg flex items-center justify-center text-white mb-4">
+                        {React.cloneElement(icon, { className: "w-6 h-6" })}
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{title}</h3>
+                    <p className="text-slate-400">{description}</p>
+                </div>
+            );
+        };
+
+
+        // --- Main App Component ---
+        const App = () => {
+            const [currentView, _setCurrentView] = useState('home'); 
+            const [displayedView, setDisplayedView] = useState('home');
+            const [isTransitioning, setIsTransitioning] = useState(false);
+            
+            const [query, setQuery] = useState("");
+            const [file, setFile] = useState(null);
+            const [fileName, setFileName] = useState("");
+            const [summary, setSummary] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [loadingFollowUps, setLoadingFollowUps] = useState(false);
+            const chatEndRef = useRef(null);
+            
+            const initialMessage = {role: 'bot', text: 'SOC Assistant v5 Online. Ask me about MITRE ATT&CK.', sources: []};
+            const [chatHistory, setChatHistory] = useState([initialMessage]);
+            const [followUps, setFollowUps] = useState([]);
+
+            useEffect(() => {
+                if (currentView !== displayedView) {
+                    setIsTransitioning(true);
+                    const timer = setTimeout(() => {
+                        setDisplayedView(currentView);
+                        setIsTransitioning(false);
+                    }, 300);
+                    return () => clearTimeout(timer);
+                }
+            }, [currentView, displayedView]);
+
+            const setCurrentView = (view) => {
+                if (view !== currentView) {
+                    _setCurrentView(view);
+                }
+            };
+            
+            useEffect(() => {
+                if (displayedView === 'chat') {
+                    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+                }
+            }, [chatHistory, displayedView]);
+            
+            // --- All handler functions (unchanged) ---
+
+            const getFollowUps = async (history) => {
+                setLoadingFollowUps(true);
+                const simplifiedHistory = history.map(msg => ({
+                    role: msg.role,
+                    text: msg.text
+                }));
+
+                try {
+                    const res = await fetch(`${API_URL}/api/followup`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ chat_history: simplifiedHistory })
+                    });
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    const data = await res.json();
+                    setFollowUps(data);
+                } catch (e) {
+                    console.error("Failed to get follow-ups:", e);
+                }
+                setLoadingFollowUps(false);
+            };
+
+            const sendChat = async (prompt) => {
+                const newQuery = prompt || query; 
+                if(!newQuery || loading) return;
+
+                const newHistory = [...chatHistory, {role: 'user', text: newQuery, sources: []}];
+                setChatHistory(newHistory);
+                setLoading(true);
+                setQuery("");
+                setFollowUps([]); 
+                
+                try {
+                    const res = await fetch(`${API_URL}/api/chat`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({query: newQuery}) 
+                    });
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    const data = await res.json();
+                    
+                    const botResponse = {role: 'bot', text: data.response, sources: data.sources || []};
+                    const updatedHistory = [...newHistory, botResponse];
+                    setChatHistory(updatedHistory);
+                    
+                    await getFollowUps(updatedHistory);
+
+                } catch(e) {
+                    console.error(e);
+                    setChatHistory([...newHistory, {role: 'bot', text: "❌ Error: Backend offline. Is 'python backend.py' running?", sources: []}]);
+                }
+                setLoading(false);
+            };
+
+            const uploadFile = async () => {
+                if(!file || loading) return;
+                setLoading(true);
+                setSummary(""); 
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                try {
+                    const res = await fetch(`${API_URL}/api/summarize`, {method: 'POST', body: formData});
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    const data = await res.json();
+                    setSummary(data.summary);
+                } catch(e) {
+                    console.error(e);
+                    setSummary("❌ Error analyzing file. Check backend terminal for details.");
+                }
+                setLoading(false);
+            };
+            
+            const handleFileChange = (e) => {
+                const f = e.target.files[0];
+                if (f) {
+                    setFile(f);
+                    setFileName(f.name);
+                }
+            }
+
+            const handleNewChat = () => {
+                setChatHistory([initialMessage]);
+                setFollowUps([]);
+                setQuery("");
+                setCurrentView('chat'); // Go to chat on new chat
+            }
+
+            // --- Main App Render Logic ---
+            return (
+                <div className="flex h-screen w-full font-ui">
+                    <Sidebar 
+                        currentView={currentView} 
+                        setCurrentView={setCurrentView} 
+                        handleNewChat={handleNewChat} 
+                    />
+                    
+                    <main className="flex-1 p-6 md:p-10 overflow-y-auto bg-slate-950 flex flex-col h-full">
+                        <div className={`transition-all duration-300 ease-in-out ${isTransitioning ? 'opacity-0 scale-[0.98]' : 'opacity-100 scale-100'} w-full h-full flex flex-col`}>
+                            
+                            {displayedView === 'home' && <Home setCurrentView={setCurrentView} />}
+                            
+                            {displayedView === 'chat' && (
+                                <div className="w-full h-full flex flex-col items-center">
+                                    <ChatInterface 
+                                        chatHistory={chatHistory} 
+                                        loading={loading} 
+                                        query={query} 
+                                        setQuery={setQuery} 
+                                        sendChat={sendChat} 
+                                        chatEndRef={chatEndRef}
+                                        followUps={followUps}
+                                        loadingFollowUps={loadingFollowUps}
+                                    />
+                                </div>
+                            )}
+                            
+                            {displayedView === 'report' && (
+                                <div className="w-full h-full flex flex-col items-center">
+                                    <div className="max-w-4xl w-full h-full">
+                                        <FileInterface setFile={handleFileChange} fileName={fileName} uploadFile={uploadFile} loading={loading} summary={summary} />
+                                    </div>
+                                
+                            </div>
+                            )}
+                            
+                            {displayedView === 'extractor' && (
+                                <div className="w-full h-full flex flex-col items-center">
+                                    <div className="max-w-4xl w-full h-full">
+                                        <ExtractorInterface loading={loading} setLoading={setLoading} />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </main>
+                </div>
+            );
+        }
+
+        // --- Chat Component (Unchanged) ---
+        const ChatInterface = ({ chatHistory, loading, query, setQuery, sendChat, chatEndRef, followUps, loadingFollowUps }) => {
+            const mitreBaseUrl = "https://attack.mitre.org/techniques/";
+            
+            return (
+                <div className="border border-blue-900/50 bg-slate-900/50 p-4 rounded-lg shadow-2xl h-full flex flex-col font-mono max-w-4xl w-full"> 
+                    <div className="flex-1 overflow-y-auto mb-4 space-y-6 pr-2">
+                        {chatHistory.map((msg, i) => (
+                            <div key={i} className={`flex gap-4 items-start ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                                {msg.role === 'bot' && <div className="bg-slate-800 p-2 rounded-full"><BotIcon /></div>}
+                                <div className={`p-4 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-slate-800' : 'bg-blue-950/50 border border-blue-900'}`}>
+                                    <div className="text-xs text-slate-500 mb-2 uppercase font-semibold">{msg.role}</div>
+                                    <div className="prose" dangerouslySetInnerHTML={useMarkdown(msg.text)} />
+                                    
+                                    {msg.sources && msg.sources.length > 0 && (
+                                        <div className="mt-4 pt-3 border-t border-blue-900/50">
+                                            <h4 className="text-xs text-slate-400 font-semibold mb-2">SOURCES:</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {msg.sources.map((source, idx) => (
+                                                    <a 
+                                                        key={idx}
+                                                        href={`${mitreBaseUrl}${source.replace(/\./g, '/')}`} 
+                                                        target="_blank"
+                                                        className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded-md hover:bg-purple-600 hover:text-white transition"
+                                                    >
+                                                        {source}
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                                {msg.role === 'user' && <div className="bg-slate-800 p-2 rounded-full"><UserIcon /></div>}
+                            </div>
+                        ))}
+                        {loading && (
+                            <div className="flex gap-4 items-start">
+                                <div className="bg-slate-800 p-2 rounded-full"><BotIcon /></div>
+                                <div className="p-4 rounded-lg bg-blue-950/50 border border-blue-900">
+                                    <LoaderIcon />
+                                </div>
+                            </div>
+                        )}
+                        {!loading && followUps.length > 0 && (
+                             <div className="flex gap-4 items-start">
+                                <div className="bg-slate-800 p-2 rounded-full"><FollowUpIcon /></div>
+                                <div className="p-4 rounded-lg max-w-[80%] bg-blue-950/50 border border-blue-900">
+                                    <h4 className="text-xs text-slate-400 font-semibold mb-3">Suggested Follow-ups:</h4>
+                                    <div className="flex flex-col items-start gap-2">
+                                        {followUps.map((prompt, i) => (
+                                            <button 
+                                                key={i}
+                                                onClick={() => sendChat(prompt)}
+                                                className="text-left text-sm text-purple-300 bg-slate-700/50 px-3 py-2 rounded-lg hover:bg-slate-700 transition"
+                                            >
+                                                {prompt}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                        {loadingFollowUps && <div className="text-xs text-slate-500 italic">Generating follow-ups...</div>}
+                        <div ref={chatEndRef} />
+                    </div>
+                    <div className="flex gap-2 pt-4 border-t border-slate-800">
+                        <input 
+                            value={query}
+                            onChange={e => setQuery(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && !loading && sendChat(null)}
+                            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:outline-none focus:border-purple-600"
+                            placeholder="Ask about TTPs, e.g., 'What is T1566: Phishing?'"
+                        />
+                        <button onClick={() => sendChat(null)} disabled={loading} className="bg-gradient-button px-6 rounded-lg font-bold text-white disabled:opacity-50">SEND</button>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- File Analysis Component (Unchanged) ---
+        const FileInterface = ({ setFile, fileName, uploadFile, loading, summary }) => {
+            const summaryMarkup = useMarkdown(summary);
+            return (
+                <div className="border border-purple-900/50 bg-slate-900/50 p-6 rounded-lg shadow-2xl h-full flex flex-col font-mono">
+                    <div className="border-2 border-dashed border-slate-700 hover:border-purple-600 p-10 rounded-lg text-center cursor-pointer transition flex-1 flex flex-col justify-center">
+                        <UploadIcon />
+                        <input type="file" onChange={setFile} className="hidden" id="file-upload" />
+                        <label htmlFor="file-upload" className="font-semibold text-purple-400 cursor-pointer">
+                            {fileName ? `Selected: ${fileName}` : "Choose a PDF file"}
+                        </label>
+                        <p className="text-xs text-slate-500 mt-2">Upload a CTI report for analysis</p>
+                    </div>
+                    <button 
+                        onClick={uploadFile} 
+                        disabled={!fileName || loading}
+                        className="w-full mt-4 bg-gradient-button px-6 py-3 rounded-lg text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {loading ? <><LoaderIcon /> "ANALYZING..."</> : "RUN ANALYSIS"}
+                    </button>
+                    
+                    {summary && !loading && (
+                        <div className="relative mt-8 text-left bg-slate-900 p-6 rounded-lg border border-slate-700 overflow-y-auto">
+                            <CopyToClipboard text={summary} />
+                            <div className="prose" dangerouslySetInnerHTML={summaryMarkup} />
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // --- IoC Extractor Component (Scan URL UI removed; text-only extractor) ---
+        const ExtractorInterface = ({ loading, setLoading }) => {
+            const [rawText, setRawText] = useState("");
+            const [results, setResults] = useState(null);
+            const [error, setError] = useState(null);
+
+            const handleExtractText = async () => {
+                if (!rawText || loading) return;
+                setLoading(true);
+                setResults(null);
+                setError(null);
+                try {
+                    const res = await fetch(`${API_URL}/api/extract`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ text: rawText })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.detail || "Failed to extract from text");
+                    }
+                    const data = await res.json();
+                    setResults(data);
+                } catch (e) {
+                    console.error(e);
+                    setError(e.message);
+                }
+                setLoading(false);
+            };
+
+            return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full font-mono">
+                    {/* Input Column (TEXT ONLY) */}
+                    <div className="flex flex-col border border-slate-800 bg-slate-900/50 p-4 rounded-lg">
+                        <textarea
+                            value={rawText}
+                            onChange={(e) => setRawText(e.target.value)}
+                            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg p-4 text-white focus:outline-none focus:border-purple-600"
+                            placeholder="Paste any raw text here... an email, a forum post, anything..."
+                        ></textarea>
+                        <button
+                            onClick={handleExtractText}
+                            disabled={!rawText || loading}
+                            className="w-full mt-4 bg-gradient-button px-6 py-3 rounded-lg text-white font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            {loading ? <><LoaderIcon /> "EXTRACTING..."</> : "EXTRACT IoCs"}
+                        </button>
+                        {error && <div className="mt-4 text-sm text-red-400">❌ Error: {error}</div>}
+                    </div>
+
+                    {/* Output Column (unchanged) */}
+                    <div className="border border-purple-900/50 bg-slate-900/50 p-6 rounded-lg shadow-2xl overflow-y-auto">
+                        <h2 className="text-xl font-bold mb-4 text-gradient">Extracted Indicators</h2>
+                        {loading && (
+                            <div className="flex justify-center items-center h-full">
+                                <LoaderIcon />
+                            </div>
+                        )}
+                        {!loading && !results && !error && (
+                            <div className="flex justify-center items-center h-full text-slate-500">
+                                <p>Results will appear here...</p>
+                            </div>
+                        )}
+                        {results && !loading && (
+                            <div className="space-y-4">
+                                <IoCList title="IP Addresses" items={results.ips} />
+                                <IoCList title="Domains" items={results.domains} />
+                                <IoCList title="CVEs" items={results.cves} />
+                                <IoCList title="MD5 Hashes" items={results.hashes_md5} />
+                                <IoCList title="SHA-256 Hashes" items={results.hashes_sha256} />
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const IoCList = ({ title, items }) => {
+            if (!items || items.length === 0) return null;
+            
+            return (
+                <div>
+                    <h3 className="text-lg font-semibold text-purple-300 mb-2">{title} ({items.length})</h3>
+                    <div className="max-h-32 overflow-y-auto bg-slate-800 p-3 rounded-md border border-slate-700 space-y-1">
+                        {items.map((item, i) => (
+                            <p key={i} className="text-slate-300 text-sm truncate">{item}</p>
+                        ))}
+                    </div>
+                </div>
+            )
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
