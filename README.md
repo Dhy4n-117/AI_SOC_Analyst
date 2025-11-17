@@ -28,8 +28,6 @@ Paste any raw text — logs, phishing content, forum dumps, malware notes — an
 - MD5 & SHA-256 hashes  
 - CVEs  
 
-> The **Scan URL UI was intentionally removed**.  
-> The extractor currently accepts text only (to avoid missing-backend endpoint errors).
 
 ### 🔐 Fully Local
 No cloud APIs.  
@@ -42,6 +40,21 @@ Everything is processed inside your system.
 
 This guide explains exactly how to run the **backend** and **frontend** for AI SOC Analyst on your local machine.
 
+---
+
+# 📦 Prerequisites for AI SOC Analyst:
+
+Installing Phi-3 or LLaMA 3: Using Ollama (easiest)
+  > Install Ollama: https://ollama.com/download
+  > Then pull Phi-3// or llama3:
+  ``` 
+     ollama pull phi3  
+  ```
+  > Update your backend to use Ollama’s endpoint:
+  ```
+    LLM_SOURCE = "ollama"
+    MODEL_NAME = "phi3"
+  ```
 ---
 
 # 📁 Required Dataset (IMPORTANT)
